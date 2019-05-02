@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd">
+
+<configuration>
+	<typeAliases>
+	</typeAliases>
+
+ 	<environments default="bridge">
+		<environment id="bridge">
+			<transactionManager type="JDBC"/>
+			<dataSource type="UNPOOLED">
+				<property name="driver" value="org.mariadb.jdbc.Driver"/>
+				<property name="url" value="jdbc:mariadb://192.168.70.62:3306/test"/>
+				<property name="username" value="maria"/>
+				<property name="password" value="user!@#$"/>
+ 
+				<!-- <property name="url" value="jdbc:mariadb://192.168.18.129:3306/test"/>
+				<property name="username" value="hdac"/>
+				<property name="password" value="hdac1234"/> -->
+
+			</dataSource>
+		</environment>
+	</environments>
+
+	<mappers>
+<!-- 	
+		<mapper resource="com/hdac/mapper/commonMapper.xml"/>
+		<mapper resource="com/hdac/mapper/contractMapper.xml"/>
+		<mapper resource="com/hdac/mapper/commonMapper.xml"/>
+ -->		
+ 	
+		<package name="com.hdac.mapper"/>
+	</mappers>
+</configuration>

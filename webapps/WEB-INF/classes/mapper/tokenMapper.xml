@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="token">
+	<insert id="insertSeedWords" parameterType="map">
+		/* [tokenMapper.xml] token.insertSeedWords, 190130 dire */
+		INSERT INTO root_seed
+		(
+			seq
+			, word
+		)
+		VALUES
+		<foreach collection="seedWords" item="item" index="index" separator=", ">
+            (#{index}, #{item})
+        </foreach>
+	</insert>
+
+	<select id="getSeedList" parameterType="map" resultType="string">
+		SELECT	/* [tokenMapper.xml] token.getSeedList, 190130 dire */
+			word
+		FROM
+			root_seed
+		ORDER BY
+			seq ASC
+	</select>
+
+	<insert id="insert" parameterType="map">
+		/* [tokenMapper.xml] token.insert, 190130 dire */
+		INSERT INTO token_info
+		(
+			no
+			, tokenName
+			, tokenCap
+			, tokenSwapRatio
+			, host
+			, tokenTxid
+			, binaryPath
+			, contractAddress
+			, contractTxid
+			, anchoringAddress
+			, recordAddress
+		)
+		VALUES
+		(
+			#{tokenNo}
+			, #{tokenName}
+			, #{tokenCap}
+			, #{tokenSwapRatio}
+			, #{serverInfo}
+			, #{tokenTxid}
+			, #{binaryPath}
+			, #{contractAddress}
+			, #{contractTxid}
+			, #{anchoringAddress}
+			, #{recordAddress}
+		)
+	</insert>
+
+	<select id="list" parameterType="map" resultType="map">
+		SELECT	/* [tokenMapper.xml] token.list, 190130 dire */
+			no
+			, tokenName
+			, tokenCap
+			, tokenSwapRatio
+			, host
+			, contractAddress
+			, contractTxid
+			, anchoringAddress
+		FROM
+			token_info
+		ORDER BY
+			no DESC
+	</select>
+
+	<select id="select" parameterType="map" resultType="map">
+		SELECT	/* [tokenMapper.xml] token.select, 190130 dire */
+			no
+			, contractAddress
+			, contractTxid
+			, tokenName
+			, tokenTxid
+			, tokenCap
+			, tokenSwapRatio
+			, anchoringAddress
+			, host
+		FROM
+			token_info
+		WHERE
+		<choose>
+			<when test="no != null and no != ''">
+				no = #{no}
+  				</when>
+			<when test="contractAddress != null and contractAddress != ''">
+				contractAddress = #{contractAddress}
+			</when>
+			<otherwise>
+				1=1
+			</otherwise>
+		</choose>
+		LIMIT
+			1
+	</select>
+
+	<select id="getVerifyAddress" resultType="map" parameterType="map">
+		SELECT	/* [tokenMapper.xml] token.getVerifyAddress, 190130 dire */
+			address_index, 
+			to_address,
+			anchor_size,
+			change_size
+		FROM
+			anchor_history
+		WHERE
+			block_cnt > #{blockCnt}
+		ORDER BY	
+			address_index ASC
+		LIMIT 1			
+	</select>
+</mapper>

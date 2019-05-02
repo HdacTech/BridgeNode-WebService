@@ -1,0 +1,511 @@
+@charset "UTF-8";
+
+.focus {
+	cursor: pointer;
+}
+
+#wrap {
+	position: relative;
+	min-width: 1024px;
+}
+
+.header {
+	position: relative;
+	z-index: 100;
+    background: #002561;
+}
+
+.header_inner {
+	position: relative;
+	z-index: 1;
+	width: 1024px;
+	height: 100px;
+	margin: 0 auto;
+}
+
+.header_logo {
+	overflow: hidden;
+	float: left;
+	margin-left: 50px;
+	width: 180px;
+	height: 100px;
+}
+
+span.logo {
+	overflow: hidden;
+	background-image: url(images/hdac_logo.png);
+    background-size: 100px;
+    display: inline-block;
+    top: 45px;
+    width: 100px;
+    height: 36px;
+    position: relative;
+}
+
+div.header_menu {
+    position: absolute;
+    top: 60px;
+    right: -5px;
+    padding-right: 8px;
+    margin-right: 50px;
+    background-position: 100% -18px;
+}
+
+div.header_menu span {
+    font-size: 14px;
+    margin: 3px;
+    color: #ffffff;
+}
+div.header_menu span.off {
+	display: none;
+}
+
+.header_title {
+	position: relative;
+	height: 36px;
+	text-align: center;
+}
+
+.header_title span {
+	text-align: center;
+	font-size: 30px;
+    color: #ffffff;
+}
+
+.header_form {
+	position: relative;
+	width: 720px;
+	height: 100px;
+	margin: 0 auto;
+}
+
+.header_send {
+	height: 40px;
+	z-index: 10;
+	margin: 5px;
+}
+
+i.icon.hdac {
+	overflow: hidden;
+	background-image: url(images/hdac_logo.png);
+    background-size: 110px;
+}
+
+
+.main {
+	position: relative;
+}
+
+.main_header {
+	position: relative;
+	z-index: 1;
+	width: 1024px;
+	height: 100px;
+	margin: 10px auto;
+	text-align: center;
+}
+
+.main_body {
+	position: relative;
+	z-index: 1;
+	width: 900px;
+	height: 100px;
+	margin: 10px auto;
+}
+
+.main_table {
+	width: 100%;
+	margin: 10px;
+}
+
+.body_form {
+	position: relative;
+	width: 720px;
+	height: 100px;
+	margin: 0 auto;
+	text-align: center;
+}
+
+.sub_table {
+	width: 100%;
+	margin: 10px;
+}
+
+.sub_table td {
+	word-break: break-all;
+}
+
+.input_form {
+	position: relative;
+	z-index: 1;
+	width: 420px;
+	margin: 10px auto;
+	text-align: center;	
+}
+
+.input_form2 {
+	position: relative;
+	z-index: 1;
+	width: 620px;
+	margin: 10px auto;
+	text-align: center;	
+}
+
+.br_height {
+	display: none;
+}
+
+.one_hundred {
+	width: 100px;
+}
+.three_hundred {
+	width: 300px;
+}
+
+.for_main{
+	width: 330px;
+}
+
+.verifyLoading {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 1;
+    width: 150px;
+    height: 150px;
+    margin: -75px 0 0 -75px;
+    border: 16px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 16px solid #002561;
+    width: 100px;
+    height: 100px;
+    -webkit-animation: spin 2s linear infinite;
+    animation: spin 2s linear infinite;
+}
+
+.main_box{
+	width:1200px; 
+	height:700px; 
+	border:1px solid; 
+	margin:0px auto;
+}
+
+.main_box .menubar{
+	float:left; 
+	width:350px; 
+	height:100%; 
+	background:#002561; 
+	text-align:center
+}
+
+.main_box .info{
+	float:left; 
+	width:800px; 
+	height:100%; 
+	margin-left:40px;
+}
+
+@-webkit-keyframes spin {
+    0% { -webkit-transform: rotate(0deg); }
+    100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 480px) {
+#wrap {
+	position: relative;
+	min-width: 360px;
+	width: 100%;
+}
+
+.header {
+	z-index: 100;
+	width: 100%;
+    background: #002561;
+}
+
+.header_inner {
+	position: relative;
+	z-index: 1;
+	width: 100%;
+	height: 45px;
+	margin: 0 auto;
+}
+
+.header_logo {
+	overflow: hidden;
+	float: left;
+	margin-left: 10px;
+	width: 100px;
+	height: 40px;
+}
+
+span.logo {
+	overflow: hidden;
+	background-image: url(images/hdac_logo.png);
+    background-size: 80px;
+    display: inline-block;
+    top: 10px;
+    width: 80px;
+    height: 28px;
+    position: relative;
+}
+
+div.header_menu {
+    position: absolute;
+    top: 5px;
+    right: -5px;
+    padding-right: 8px;
+    margin-right: 10px;
+    background-position: 100% -18px;
+}
+
+div.header_menu span {
+    font-size: 12px;
+    margin: 3px;
+    color: #ffffff;
+}
+
+.header_title {
+	position: relative;
+	height: 30px;
+	text-align: center;
+}
+
+.header_title span {
+	text-align: center;
+	font-size: 24px;
+    color: #ffffff;
+}
+
+.header_form {
+	position: relative;
+	width: 180px;
+	height: 100px;
+	margin: 0 auto;
+}
+
+.header_send {
+	height: 40px;
+	z-index: 10;
+	margin: 5px;
+}
+
+i.icon.hdac {
+	overflow: hidden;
+	background-image: url(images/hdac_logo.png);
+    background-size: 110px;
+}
+
+.main_header {
+	position: relative;
+	z-index: 1;
+	width: 100%;
+	height: 100px;
+	margin: 10px auto;
+	text-align: center;
+}
+
+.main_body {
+	position: relative;
+	z-index: 1;
+	width: 300px;
+	height: 100px;
+	margin: 10px auto;
+}
+
+.main_table {
+	width: 100%;
+	margin: 10px;
+}
+
+.body_form {
+	position: relative;
+	width: 180px;
+	height: 100px;
+	margin: 0 auto;
+	text-align: center;
+}
+
+.sub_table {
+	width: 100%;
+	margin: 10px;
+}
+
+.sub_table td {
+	word-break: break-all;
+}
+
+.input_form {
+	position: relative;
+	z-index: 1;
+	width: 85%;
+	margin: 10px auto;
+	margin-top: 30px;
+	margin-left: 30px;
+	text-align: left;
+}
+
+.br_height {
+	display: block;
+	text-height: 10px;
+}
+}
+
+@media (max-width: 360px) {
+#wrap {
+	position: relative;
+	min-width: 320px;
+	width: 100%;
+}
+
+.header {
+	z-index: 100;
+	width: 100%;
+    background: #002561;
+}
+
+.header_inner {
+	position: relative;
+	z-index: 1;
+	width: 100%;
+	height: 45px;
+	margin: 0 auto;
+}
+
+.header_logo {
+	overflow: hidden;
+	float: left;
+	margin-left: 10px;
+	width: 100px;
+	height: 40px;
+}
+
+span.logo {
+	overflow: hidden;
+	background-image: url(images/hdac_logo.png);
+    background-size: 80px;
+    display: inline-block;
+    top: 10px;
+    width: 80px;
+    height: 28px;
+    position: relative;
+}
+
+div.header_menu {
+    position: absolute;
+    top: 5px;
+    right: -5px;
+    padding-right: 8px;
+    margin-right: 10px;
+    background-position: 100% -18px;
+}
+
+div.header_menu span {
+    font-size: 12px;
+    margin: 3px;
+    color: #ffffff;
+}
+
+.header_title {
+	width: 100%;
+	position: relative;
+	height: 30px;
+	text-align: center;
+}
+
+.header_title span {
+	text-align: center;
+	font-size: 24px;
+    color: #ffffff;
+}
+
+.header_form {
+	position: relative;
+	width: 180px;
+	height: 100px;
+	margin: 0 auto;
+}
+
+.header_send {
+	height: 40px;
+	z-index: 10;
+	margin: 5px;
+}
+
+i.icon.hdac {
+	overflow: hidden;
+	background-image: url(images/hdac_logo.png);
+    background-size: 110px;
+}
+
+.main_header {
+	position: relative;
+	z-index: 1;
+	width: 100%;
+	height: 100px;
+	margin: 10px auto;
+	text-align: center;
+}
+
+.main_body {
+	position: relative;
+	z-index: 1;
+	width: 300px;
+	height: 100px;
+	margin: 10px auto;
+}
+
+.main_table {
+	width: 100%;
+	margin: 10px;
+}
+
+.body_form {
+	position: relative;
+	width: 180px;
+	height: 100px;
+	margin: 0 auto;
+	text-align: center;
+}
+
+.sub_table {
+	width: 100%;
+	margin: 10px;
+}
+
+.sub_table td {
+	word-break: break-all;
+}
+
+.input_form {
+	position: relative;
+	z-index: 1;
+	width: 83%;
+	margin: 10px auto;
+	margin-top: 30px;
+	margin-left: 30px;
+	text-align: left;
+}
+
+.br_height {
+	display: block;
+	text-height: 10px;
+}
+}
+
+@media (max-width: 320px) {
+.input_form {
+	position: relative;
+	z-index: 1;
+	width: 93%;
+	margin: 10px auto;
+	margin-top: 10px;
+	margin-left: 10px;
+	text-align: left;
+}
+}
