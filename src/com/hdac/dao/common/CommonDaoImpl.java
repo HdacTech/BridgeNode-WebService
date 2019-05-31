@@ -6,11 +6,12 @@
 package com.hdac.dao.common;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.ibatis.session.SqlSession;
 import org.springframework.stereotype.Repository;
 
-import com.hdac.common.StringUtil;
+import com.hdac.comm.StringUtil;
 
 /**
  * Common Data Access Object Implementation
@@ -49,5 +50,11 @@ public class CommonDaoImpl implements CommonDao
 		sqlSession.insert("common.insertTokenInfo", map);
 
 		return Long.parseLong(StringUtil.nvl(map.get("seq_val"), "0"));
+	}
+
+	@Override
+	public List<String> getAccessIp()
+	{
+		return sqlSession.selectList("common.selectAccessIp");
 	}
 }

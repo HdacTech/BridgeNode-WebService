@@ -5,11 +5,10 @@
  */
 package com.hdac.service.rpc;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 import org.springframework.stereotype.Service;
-
-import com.hdac.common.ServerConfig;
 
 
 /**
@@ -31,7 +30,7 @@ public interface RpcService
 	 * @param config	value(main chain or side chain)
 	 * @return          (string) the formatted json string
 	 */
-	public String getAddress(Map<String, Object> paramMap, ServerConfig config);
+	public String getAddress(Map<String, Object> paramMap, Map<String, Object> config);
 	
 	/**
 	 * get multi addresses utxos informations
@@ -41,7 +40,7 @@ public interface RpcService
 	 * @param config	value(main chain or side chain)
 	 * @return          (string) the formatted json string
 	 */
-	public String getUtxos(Map<String, Object> paramMap, ServerConfig config);
+	public String getUtxos(Map<String, Object> paramMap, Map<String, Object> config);
 
 	/**
 	 * get multi addresses transactions informations
@@ -51,7 +50,7 @@ public interface RpcService
 	 * @param config	value(main chain or side chain)
 	 * @return          (string) the formatted json string
 	 */
-	public String getTxs(Map<String, Object> paramMap, ServerConfig config);
+	public String getTxs(Map<String, Object> paramMap, Map<String, Object> config);
 
 	/**
 	 * send raw transaction hex data
@@ -61,7 +60,7 @@ public interface RpcService
 	 * @param config	value(main chain or side chain)
 	 * @return          (Map(string,object)) formatted string-object map data
 	 */
-	public Map<String, Object> sendTx(Map<String, Object> paramMap, ServerConfig config);
+	public Map<String, Object> sendTx(Map<String, Object> paramMap, Map<String, Object> config);
 	
 
 	/**
@@ -69,9 +68,9 @@ public interface RpcService
 	 * called by assetAddressBalance(AssetApiController)
 	 * 
 	 * @param paramMap	values(addresses,asset)
-	 * @return          (string) the formatted json string
+	 * @return          (BigDecimal) the formatted json string
 	 */
-	public String getAssetAddressBalance(Map<String, Object> paramMap);
+	public BigDecimal getAssetAddressBalance(Map<String, Object> paramMap);
 	
 	/**
 	 * get single address infomation(balance, transactions) (side chain only)

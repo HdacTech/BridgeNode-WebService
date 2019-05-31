@@ -9,7 +9,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.nio.ByteBuffer;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -31,13 +32,14 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
-import org.bitcoinj.core.Base58;
 import org.bitcoinj.core.ECKey;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.spongycastle.crypto.digests.SHA256Digest;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.socket.client.WebSocketConnectionManager;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 
@@ -95,13 +97,13 @@ public class HdacUtil
 {
 	private static Logger logger = LoggerFactory.getLogger(HdacUtil.class);
 
-	public static ServerConfig _PUBLIC_;
-	public static ServerConfig _PRIVATE_;
+	public static Map<String, Object> _PUBLIC_;
+	public static Map<String, Object> _PRIVATE_;
 
 	static
 	{
-		_PUBLIC_ = new ServerConfig();
-		_PRIVATE_ = new ServerConfig();
+		_PUBLIC_ = new HashMap<String, Object>();
+		_PRIVATE_ = new HashMap<String, Object>();
 
 		try
 		{
@@ -114,7 +116,7 @@ public class HdacUtil
 		}
 	}
 
-	public static void setServerConfig(ServerConfig config, String resource)
+	public static void setServerConfig(Map<String, Object> config, String resource)
 	{
 		Properties properties = new Properties();
 
@@ -123,15 +125,15 @@ public class HdacUtil
 			Reader reader = Resources.getResourceAsReader(resource);
 			properties.load(reader);
 
-			config.setRpcIp(properties.getProperty("rpcIp"));
-			config.setRpcPort(properties.getProperty("rpcPort"));
-			config.setRpcUser(properties.getProperty("rpcUser"));
-			config.setRpcPassword(properties.getProperty("rpcPassword"));
-			config.setChainName(properties.getProperty("chainName"));
+			config.put("rpcIp",			properties.getProperty("rpcIp"));
+			config.put("rpcPort",		properties.getProperty("rpcPort"));
+			config.put("rpcUser",		properties.getProperty("rpcUser"));
+			config.put("rpcPassword",	properties.getProperty("rpcPassword"));
+			config.put("chainName",		properties.getProperty("chainName"));
 
-			config.setWsHost(properties.getProperty("wsHost"));
-			config.setWsIp(properties.getProperty("wsIp"));
-			config.setWsPort(properties.getProperty("wsPort"));
+			config.put("wsHost",		properties.getProperty("wsHost"));
+			config.put("wsIp",			properties.getProperty("wsIp"));
+			config.put("wsPort",		properties.getProperty("wsPort"));
 
 			reader.close();
 		}
@@ -141,7 +143,7 @@ public class HdacUtil
 		}
 	}
 
-	public static ServerConfig getServerType(String path)
+	public static Map<String, Object> getServerType(String path)
 	{
 		if ("public".equals(path))
 			return HdacUtil._PUBLIC_;
@@ -149,14 +151,14 @@ public class HdacUtil
 		return HdacUtil._PRIVATE_;
 	}
 
-	public static WebSocketConnectionManager getWebSocket(ServerConfig config) throws JSONException
+	public static WebSocketConnectionManager getWebSocket(Map<String, Object> config) throws JSONException
 	{
-		String host = config.getWsHost();
-		String address = config.getWsIp() + ":" + config.getWsPort();
+		String host = StringUtil.nvl(config.get("wsHost"));
+		String address = config.get("wsIp") + ":" + config.get("wsPort");
 
 		JSONObject obj = new JSONObject();
-		obj.put("user", config.getRpcUser());
-		obj.put("pass", config.getRpcPassword());
+		obj.put("user", config.get("rpcUser"));
+		obj.put("pass", config.get("rpcPassword"));
 		
 		WebSocketContainer container = ContainerProvider.getWebSocketContainer();
 		container.setDefaultMaxBinaryMessageBufferSize(8192 * 8192);
@@ -171,7 +173,7 @@ public class HdacUtil
 		return webSocketManager;
 	}
 
-	private static String sendRPC(String body, ServerConfig config) throws JSONException
+	private static String sendRPC(String body, Map<String, Object> config) throws JSONException
 	{
 		StringBuilder result = new StringBuilder();
 		CloseableHttpResponse response1 = null;
@@ -181,11 +183,11 @@ public class HdacUtil
 		{
 			StringBuilder auth = new StringBuilder("Basic ");
 			//auth.append(Base64.encode("hdacrpc:hdac1234".getBytes()));
-			auth.append(Base64.getEncoder().encodeToString((config.getRpcUser() + ":" + config.getRpcPassword()).getBytes("UTF-8")));
+			auth.append(Base64.getEncoder().encodeToString((config.get("rpcUser") + ":" + config.get("rpcPassword")).getBytes("UTF-8")));
 
 			CloseableHttpClient httpclient = HttpClients.createDefault();
 			//HttpPost httpPost = new HttpPost(_RPC_);
-			HttpPost httpPost = new HttpPost(config.getRpcIp() + ":" + config.getRpcPort());
+			HttpPost httpPost = new HttpPost(config.get("rpcIp") + ":" + config.get("rpcPort"));
 
 			httpPost.addHeader("content-type", "application/json");
 			httpPost.addHeader("Authorization", auth.toString());
@@ -250,18 +252,18 @@ public class HdacUtil
 //		return sendRPC(body, config);
 //	}
 
-	public static JSONObject getDataObject(String method, JSONObject params, ServerConfig config)
+	public static JSONObject getDataObject(String method, JSONObject params, Map<String, Object> config)
 	{
 		Object[] obj = new Object[1];
 		obj[0] = params;
 
 		return getDataObject(method, obj, null, config);
 	}
-	public static JSONObject getDataObject(String method, Object[] params, ServerConfig config)
+	public static JSONObject getDataObject(String method, Object[] params, Map<String, Object> config)
 	{
 		return getDataObject(method, params, null, config);
 	}
-	public static JSONObject getDataObject(String method, Object[] params, JSONObject options, ServerConfig config)
+	public static JSONObject getDataObject(String method, Object[] params, JSONObject options, Map<String, Object> config)
 	{
 		try
 		{
@@ -278,18 +280,18 @@ public class HdacUtil
 		return new JSONObject();
 	}
 
-	public static JSONArray getDataArray(String method, JSONObject params, ServerConfig config)
+	public static JSONArray getDataArray(String method, JSONObject params, Map<String, Object> config)
 	{
 		Object[] obj = new Object[1];
 		obj[0] = params;
 
 		return getDataArray(method, obj, null, config);
 	}
-	public static JSONArray getDataArray(String method, Object[] params, ServerConfig config)
+	public static JSONArray getDataArray(String method, Object[] params, Map<String, Object> config)
 	{
 		return getDataArray(method, params, null, config);
 	}
-	public static JSONArray getDataArray(String method, Object[] params, JSONObject options, ServerConfig config)
+	public static JSONArray getDataArray(String method, Object[] params, JSONObject options, Map<String, Object> config)
 	{
 		try
 		{
@@ -307,11 +309,11 @@ public class HdacUtil
 		return new JSONArray();
 	}
 
-	public static String getDataFromRPC(String method, Object[] params, ServerConfig config) throws JSONException
+	public static String getDataFromRPC(String method, Object[] params, Map<String, Object> config) throws JSONException
 	{
 		return getDataFromRPC(method, params, null, config);
 	}
-	public static String getDataFromRPC(String method, Object[] params, JSONObject options, ServerConfig config) throws JSONException
+	public static String getDataFromRPC(String method, Object[] params, JSONObject options, Map<String, Object> config) throws JSONException
 	{
 		String body = "";
 		try
@@ -326,10 +328,6 @@ public class HdacUtil
 		return sendRPC(body, config);
 	}
 
-	private static String getBody(String method, Object[] params) throws JSONException
-	{
-		return getBody(method, params, null);
-	}
 	private static String getBody(String method, Object[] params, JSONObject options) throws JSONException
 	{
 		long id = (long)(Math.random() * 10000);
@@ -409,7 +407,7 @@ public class HdacUtil
 		if (paramMap.size() > 0)
 			contractString = JsonUtil.toJsonString(paramMap).toString();
 
-		double balance = 0;
+		BigDecimal balance = BigDecimal.ZERO;
 		try
 		{
 			int len = data.length();
@@ -417,7 +415,7 @@ public class HdacUtil
 	    	{
 				JSONObject utxo;
 				utxo = data.getJSONObject(i);
-				balance += utxo.getDouble("amount");
+				balance = balance.add(utxo.getBigDecimal("amount"));
 				
 				transaction.addInput(data.getJSONObject(i));
 			}
@@ -430,18 +428,18 @@ public class HdacUtil
 
 		logger.debug("balance " + balance);
 
-		//for checking balance 
-		long lBalance = (long)(balance * Math.pow(10, 8));
-		long fee = (long)(2 * Math.pow(10, 6) + contractString.length() * Math.pow(10, 3));
-		long remain = lBalance - fee;
+		//for checking balance
+		BigInteger lBalance = balance.multiply(BigDecimal.TEN.pow(8)).toBigInteger();
+		BigInteger fee = BigInteger.valueOf(2).multiply(BigInteger.TEN.pow(6)).add(BigInteger.valueOf(contractString.length()).multiply(BigInteger.TEN.pow(3)));
+		BigInteger remain = lBalance.subtract(fee);
 
 		logger.debug("lBalance " + lBalance);
 		logger.debug("fee " + fee);
 		logger.debug("remain " + remain);
 		
-		if (remain >= 0)
+		if (remain.compareTo(BigInteger.ZERO) >= 0)
 		{
-			transaction.addOutput(wallet.getHdacAddress(), remain);
+			transaction.addOutput(wallet.getHdacAddress(), remain.longValue());
 			transaction.addOpReturnOutput(JsonUtil.toJsonString(paramMap).toString(), "UTF-8");
 			//transaction.addAssetOutput(address, txid, amount);
 			try
@@ -688,88 +686,4 @@ public class HdacUtil
 //	       }       
 //	       return Base58.encode(hdacAddrByte);       
 //	}
-//	    
-	//-->for verify
-	public static List<String> makeHash(List<String> list) {
-		
-		List<String> tempArray = new ArrayList<String>();
-		int arraySize = list.size();
-		
-		//--> if the size is not even number, add value of copy of last value   
-		/*if(arraySize % 2 != 0) {
-			arraySize = arraySize + 1;
-			list.add(list.get(list.size()-1));
-		}*/
-		//<--
-						
-		for(int i = 0; i < arraySize; i += 2) 
-		{
-			/*String reverse1 = hexReverse(list.get(i).toString());
-			String reverse2 = hexReverse(list.get(i + 1).toString());
-			tempArray.add(binaryHash(reverse1, reverse2));*/
-			
-			byte[] hex1 = reverseHexStringToByteArray(list.get(i).toString());
-			byte[] hex2 = reverseHexStringToByteArray(list.get(i + 1).toString());
-			tempArray.add(binaryHash(hex1, hex2));
-		}
-		
-		if(tempArray.size() > 1) makeHash(tempArray);
-						
-		return tempArray;
-	}
-
-	private static byte[] SHA256(byte[] str)
-	{
-		try
-		{
-			MessageDigest sh = MessageDigest.getInstance("SHA-256"); 
-			sh.update(str); 
-
-			return sh.digest();
-		}
-		catch (Exception e)
-		{
-		}
-		return null;
-	}
-	
-
-	public static byte[] reverse(byte[] arr) {
-		
-		byte[] buf = new byte[arr.length];
-		for (int i = 0; i < arr.length; i++)
-		{
-			buf[i] = (byte)((arr[arr.length - i - 1] >>> (arr.length * i)) & 0xFF);
-		}
-
-		return buf;		
-	}
-		
-	private static String binaryHash(byte[] hex1, byte[] hex2)	{
-
-		byte[] sum_byte = ArrayUtils.addAll(hex1, hex2);
-
-		// execute double hash
-		byte[] hash_byte = SHA256(SHA256(sum_byte));
-
-		// change binary to String
-		StringBuilder sb = new StringBuilder();
-		for (byte bb : hash_byte)
-		{
-			sb.insert(0, String.format("%02X", bb & 0xFF)); 
-		}
-		return sb.toString();
-	}
-	
-	private static byte[] reverseHexStringToByteArray(String str) {
-
-		int len = str.length() / 2;
-		byte[] data = new byte[len];
-		for (int i = 0; i < len; i++)
-		{
-			data[i] = (byte)((Character.digit(str.charAt((len - i - 1) * 2), 16) << 4) + Character.digit(str.charAt((len - i) * 2 - 1), 16));
-		}
-		return data;
-	}
-	//-->for verify
 }

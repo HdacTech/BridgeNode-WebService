@@ -19,8 +19,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
 import com.hdac.common.BeanUtil;
-import com.hdac.common.HdacUtil;
-import com.hdac.common.JsonUtil;
+import com.hdac.property.ServerConfig;
+import com.hdac.comm.HdacUtil;
+import com.hdac.comm.JsonUtil;
 import com.hdac.service.rpc.RpcService;
 import com.hdac.service.rpc.RpcServiceImpl;
 
@@ -70,8 +71,9 @@ public class ApiController
 		paramMap.put("from",		from);
 		paramMap.put("count",		count);
 
+		ServerConfig config = ServerConfig.getInstance();
 		RpcService service = (RpcService)BeanUtil.getBean(RpcServiceImpl.class);
-		view.addObject("jsonStr", service.getAddress(paramMap, HdacUtil.getServerType(path)));
+		view.addObject("jsonStr", service.getAddress(paramMap, config.getServerType(path)));
 		return view;
 	}
 
@@ -91,8 +93,9 @@ public class ApiController
 		Map<String, Object> paramMap = new HashMap<String, Object>();
 		paramMap.put("addresses", addresses);
 
+		ServerConfig config = ServerConfig.getInstance();
 		RpcService service = (RpcService)BeanUtil.getBean(RpcServiceImpl.class);
-		view.addObject("jsonStr", service.getUtxos(paramMap, HdacUtil.getServerType(path)));
+		view.addObject("jsonStr", service.getUtxos(paramMap, config.getServerType(path)));
 		return view;
 	}
 
@@ -125,8 +128,9 @@ public class ApiController
 		paramMap.put("from",		from);
 		paramMap.put("count",		count);
 
+		ServerConfig config = ServerConfig.getInstance();
 		RpcService service = (RpcService)BeanUtil.getBean(RpcServiceImpl.class);
-		view.addObject("jsonStr", service.getTxs(paramMap, HdacUtil.getServerType(path)));
+		view.addObject("jsonStr", service.getTxs(paramMap, config.getServerType(path)));
 		return view;
 	}
 
@@ -148,8 +152,9 @@ public class ApiController
 		Map<String, Object> paramMap = new HashMap<String, Object>();
 		paramMap.put("rawtx", rawtx);
 
+		ServerConfig config = ServerConfig.getInstance();
 		RpcService service = (RpcService)BeanUtil.getBean(RpcServiceImpl.class);
-		Map<String, Object> resultMap = service.sendTx(paramMap, HdacUtil.getServerType(path)); 
+		Map<String, Object> resultMap = service.sendTx(paramMap, config.getServerType(path)); 
 
 		String result = "";
 		boolean success = (boolean)resultMap.get("success");
@@ -172,9 +177,10 @@ public class ApiController
 	public ModelAndView getInfo(@RequestParam(value="path",	defaultValue="public")	String path)
 	{
 		ModelAndView view = new ModelAndView("commonAjax");
-						
+
+		ServerConfig config = ServerConfig.getInstance();
 		RpcServiceImpl service = (RpcServiceImpl)BeanUtil.getBean(RpcServiceImpl.class);
-		view.addObject("jsonStr", service.getInfo(HdacUtil.getServerType(path)));
+		view.addObject("jsonStr", service.getInfo(config.getServerType(path)));
 		
 		return view;
 	}

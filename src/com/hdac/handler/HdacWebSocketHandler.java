@@ -19,7 +19,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 //import com.hdac.common.BeanUtil;
 import com.hdac.common.Constants;
-import com.hdac.common.StringUtil;
+import com.hdac.comm.StringUtil;
 
 /**
  * HdacWebSocketHandler extends TextWebSocketHandler
@@ -41,7 +41,6 @@ public class HdacWebSocketHandler extends TextWebSocketHandler
 {
 	private static Logger logger = LoggerFactory.getLogger(HdacWebSocketHandler.class);
 	private static Map<String, Object> constantsMap = null;
-	private static Map<String, Object> tokenInfo = null;
 
 	static
 	{

@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Token Service interface 
@@ -75,4 +76,6 @@ public interface TokenService
 	public boolean insertTokenInfo(String data);
 	
 	public String getMainPageData();  //--> for main
+	
+	public String getContractHash(MultipartFile file);  //-->for contract upload
 }

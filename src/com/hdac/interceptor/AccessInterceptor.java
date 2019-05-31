@@ -5,58 +5,35 @@
  */
 package com.hdac.interceptor;
 
-import java.io.PrintWriter;
-import java.io.Reader;
-import java.util.ArrayList;
-import java.util.Properties;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.ibatis.io.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 
+import com.hdac.property.AccessIp;
+
 public class AccessInterceptor extends HandlerInterceptorAdapter
 {
 	private static Logger logger = LoggerFactory.getLogger(AccessInterceptor.class);
-	public static  ArrayList<String> ipList = new ArrayList<String>();
-	
-	static
-	{
-		try
-		{
-			setIpList("config/access-ip.properties");
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
-	}
 	
 	@Override
 	public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception
 	{
-		String uri = request.getRequestURI();
-			
-		if(uri.contains("form")) 
+		AccessIp accessIp = AccessIp.getInstance();
+		if (accessIp.checkAccessIp(request.getRemoteAddr()) == false)
 		{
-			if(ipList.size() != 0) 
-			{
-				if(!ipList.contains(request.getServerName()))
-				{
-					PrintWriter writer = response.getWriter();
-					writer.println("<script>alert('Access fail. It can only use for administrator.'); history.go(-1);</script>");
-					writer.flush();
-					return false;
-				}
-			}
+//			PrintWriter writer = response.getWriter();
+//			writer.println("<script>alert('Access fail. It can only use for administrator.'); history.go(-1);</script>");
+//			writer.flush();
+			logger.debug("not allowed ip : " + request.getRemoteAddr());
+			response.sendRedirect("/list.do");
+			return false;
 		}
-			
 		return true;
     }
-	
+/*
 	public static void setIpList(String resource)
 	{
 		Properties properties = new Properties();
@@ -82,4 +59,5 @@ public class AccessInterceptor extends HandlerInterceptorAdapter
 			e.printStackTrace();
 		}
 	}
+*/
 }

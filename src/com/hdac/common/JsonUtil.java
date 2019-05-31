@@ -5,14 +5,11 @@
  */
 package com.hdac.common;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -90,33 +87,6 @@ public class JsonUtil
         return result ;
     }
 
-//	public static JSONArray toJsonArray(List<Map<String, Object>> maps)
-//	{
-//	   JSONArray jsonObjectArray = new JSONArray();
-//	   for (Map<String, Object> map : maps)
-//	   {
-//	      jsonObjectArray.put(toJsonString(map));
-//	   }
-//	   return jsonObjectArray;
-//	}
-	
-	private static void fromJsonObject(Map<String, Object> map, JSONObject jsonObject) throws JSONException
-	{
-		if ((map == null) || (jsonObject == null))
-			return;
-
-		map.clear();
-
-		Iterator<String> i = jsonObject.keys();
-		while (i.hasNext())
-		{
-			String key = i.next();
-			Object value = jsonObject.get(key);
-
-			map.put(key, value);
-		}
-	}
-
 	private static Map<String, Object> fromJsonObject(JSONObject jsonObject) throws JSONException
 	{
 		Map<String, Object> map = new HashMap<String, Object>();
@@ -133,19 +103,4 @@ public class JsonUtil
 		}
 		return map;
 	}
-	
-
-//	public static List<Map<String, Object>> fromJsonArray(JSONArray jsonarray) throws JSONException
-//	{
-//		List<Map<String, Object>> listMap = new ArrayList<Map<String, Object>>();
-//		
-//	   int len = jsonarray.length();
-//	   
-//	   for (int i=0; i<len; i++)
-//	   {
-//		   JSONObject jsonobj = jsonarray.getJSONObject(i);
-//		   listMap.add(fromJsonObject(jsonobj));
-//	   }
-//	   return listMap; 
-//	}
 }

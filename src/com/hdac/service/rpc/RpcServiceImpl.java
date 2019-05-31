@@ -5,28 +5,29 @@
  */
 package com.hdac.service.rpc;
 
-import java.text.DecimalFormat;
+import java.math.BigDecimal;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.spongycastle.crypto.digests.SHA256Digest;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.hdac.common.BeanUtil;
-import com.hdac.common.HdacUtil;
-import com.hdac.common.JsonUtil;
-import com.hdac.common.ServerConfig;
-import com.hdac.common.StringUtil;
+import com.hdac.comm.HdacUtil;
+import com.hdac.comm.JsonUtil;
+import com.hdac.comm.StringUtil;
 import com.hdac.dao.rpc.RpcDao;
 import com.hdac.dao.rpc.RpcDaoImpl;
+import com.hdac.property.ServerConfig;
 import com.hdac.service.token.TokenService;
 import com.hdac.service.token.TokenServiceImpl;
 
@@ -56,7 +57,7 @@ public class RpcServiceImpl implements RpcService
 	private static Logger logger = LoggerFactory.getLogger(RpcServiceImpl.class);
 
 	@Override
-	public String getAddress(Map<String, Object> paramMap, ServerConfig config)
+	public String getAddress(Map<String, Object> paramMap, Map<String, Object> config)
 	{
 		JSONObject resultObj = new JSONObject();
 
@@ -66,12 +67,12 @@ public class RpcServiceImpl implements RpcService
 
 			String address = StringUtil.nvl(paramMap.get("address"));
 
-			double balance = rpcDao.getAddressBalance(address, config);
+			BigDecimal balance = rpcDao.getAddressBalance(address, config);
 			List<String> txList = rpcDao.getAddressList(paramMap, config);
 
 			resultObj.put("addrStr",		address);
 			resultObj.put("balance",		balance);
-			resultObj.put("balanceSat",		(long)(balance * Math.pow(10, 8)));
+			resultObj.put("balanceSat",		balance.multiply(BigDecimal.TEN.pow(8)).toBigInteger());
 			resultObj.put("txApperances",	txList.size());
 			resultObj.put("transactions",	txList);
 
@@ -85,7 +86,7 @@ public class RpcServiceImpl implements RpcService
 	}
 
 	@Override
-	public String getUtxos(Map<String, Object> paramMap, ServerConfig config)
+	public String getUtxos(Map<String, Object> paramMap, Map<String, Object> config)
 	{
 		RpcDao rpcdao = (RpcDao)BeanUtil.getBean(RpcDaoImpl.class);
 		String resultStr = "";
@@ -104,7 +105,7 @@ public class RpcServiceImpl implements RpcService
 	}
 
 	@Override
-	public String getTxs(Map<String, Object> paramMap, ServerConfig config)
+	public String getTxs(Map<String, Object> paramMap, Map<String, Object> config)
 	{
 		RpcDao rpcdao = (RpcDao)BeanUtil.getBean(RpcDaoImpl.class);
 		String resultStr = "";
@@ -123,7 +124,7 @@ public class RpcServiceImpl implements RpcService
 	}
 
 	@Override
-	public Map<String, Object> sendTx(Map<String, Object> paramMap, ServerConfig config)
+	public Map<String, Object> sendTx(Map<String, Object> paramMap, Map<String, Object> config)
 	{
 		Map<String, Object> map = new HashMap<String, Object>();
 
@@ -158,9 +159,9 @@ public class RpcServiceImpl implements RpcService
 	}
 	
 	@Override
-	public String getAssetAddressBalance(Map<String, Object> paramMap)
+	public BigDecimal getAssetAddressBalance(Map<String, Object> paramMap)
 	{
-		double balance = 0;
+		BigDecimal balance = BigDecimal.ZERO;
 		try
 		{
 			RpcDao rpcdao = (RpcDao)BeanUtil.getBean(RpcDaoImpl.class);
@@ -170,9 +171,7 @@ public class RpcServiceImpl implements RpcService
 		{
 			e.printStackTrace();
 		}
-
-		DecimalFormat format = new DecimalFormat(".########");
-		return format.format(Math.round(balance * Math.pow(10, 8)) / Math.pow(10, 8));
+		return balance;
 	}
 
 	@Override
@@ -191,14 +190,13 @@ public class RpcServiceImpl implements RpcService
 			List<String> txList = rpcDao.getAssetTxList(paramMap);
 			long totalCount = txList.size();
 
-			double balance = resultObj.getDouble("balance");
-			long balanceSat = (long)(balance * Math.pow(10, 8));
+			BigDecimal balance = resultObj.getBigDecimal("balance");
 
 			resultObj.put("addrStr",		paramMap.get("address"));
 			resultObj.put("transactions",	txList);
 			resultObj.put("txApperances",	totalCount);
 			resultObj.put("balance",		balance);
-			resultObj.put("balanceSat",		balanceSat);
+			resultObj.put("balanceSat",		balance.multiply(BigDecimal.TEN.pow(8)).toBigInteger());
 		}
 		catch (Exception e)
 		{
@@ -225,7 +223,7 @@ public class RpcServiceImpl implements RpcService
 			}
 			else if (obj.has("assetref") && ("".equals(obj.getString("assetref"))))
 			{
-				double balance = obj.getDouble("qty");
+				BigDecimal balance = obj.getBigDecimal("qty");
 				resultObj.put("balance", balance);
 			}
 		}
@@ -272,35 +270,6 @@ public class RpcServiceImpl implements RpcService
 		return resultStr;
 	}
 
-	private String getContractHash(MultipartFile file) 
-	{
-		String result = "";
-				
-		byte[] data;
-		try 
-		{
-			data = file.getBytes();
-			SHA256Digest md = new SHA256Digest();
-			md.update(data, 0, data.length);
-			
-			byte[] hashed = new byte[md.getDigestSize()];
-			md.doFinal(hashed, 0);
-			
-			StringBuilder sb = new StringBuilder(); 
-			for (byte b : hashed)
-			{
-				sb.append(String.format("%02X", b & 0xff)); 
-			}
-			result = sb.toString();
-		} 
-		catch (Exception e1) 
-		{
-			e1.printStackTrace();
-		}
-
-		return result;
-	}
-
 	public String verifyTx(Map<String, Object> paramMap) throws JSONException
 	{
 		JSONObject resultObj = new JSONObject();
@@ -316,7 +285,8 @@ public class RpcServiceImpl implements RpcService
 		params[0] = paramMap.get("txid");
 		params[1] = 1;
 
-		rpcResult = HdacUtil.getDataFromRPC("getrawtransaction", params, HdacUtil._PRIVATE_);
+		ServerConfig config = ServerConfig.getInstance();
+		rpcResult = HdacUtil.getDataFromRPC("getrawtransaction", params, config.getSideChainInfo());
 		checkResult = new JSONObject(rpcResult).get("result").toString();
 		if(checkResult.equals("null")) {
 			String message = new JSONObject(rpcResult).getJSONObject("error").getString("message"); 
@@ -330,7 +300,7 @@ public class RpcServiceImpl implements RpcService
 		//get block height from block hash
 		params[0] = blockHash;
 				
-		rpcResult = HdacUtil.getDataFromRPC("getblock", params, HdacUtil._PRIVATE_);
+		rpcResult = HdacUtil.getDataFromRPC("getblock", params, config.getSideChainInfo());
 		checkResult = new JSONObject(rpcResult).get("result").toString();
 		if(checkResult.equals("null")) {
 			String message = new JSONObject(rpcResult).getJSONObject("error").getString("message"); 
@@ -368,13 +338,13 @@ public class RpcServiceImpl implements RpcService
 		List<String> merkleList = new ArrayList<String>();
 		for(int i = startBlockCnt; i < endBlockCnt + 1; i++) {
 			params[0] = String.valueOf(i);
-			rpcResult = HdacUtil.getDataFromRPC("getblock", params, HdacUtil._PRIVATE_);
+			rpcResult = HdacUtil.getDataFromRPC("getblock", params, config.getSideChainInfo());
 			String merkle = new JSONObject(rpcResult).getJSONObject("result").getString("merkleroot");
 			merkleList.add(merkle);
 		}
 		
 		//calculate the hash of merkle trees
-		List<String> finalMerkle = HdacUtil.makeHash(merkleList);
+		List<String> finalMerkle = makeHash(merkleList);
 		String hash = finalMerkle.get(0).toString();
 				
 		Map<String, Object> map = new HashMap<String, Object>();
@@ -384,7 +354,7 @@ public class RpcServiceImpl implements RpcService
 		map.put("count", anchorChangeSize);
 		
 		RpcDao rpcDao = (RpcDao)BeanUtil.getBean(RpcDaoImpl.class);
-		List<String> txList = rpcDao.getAddressList(map, HdacUtil._PUBLIC_);
+		List<String> txList = rpcDao.getAddressList(map, config.getMainChainInfo());
 		logger.debug("VERIFY : TX LIST        : " + txList.size());
 		
 		//get data of transaction
@@ -393,7 +363,7 @@ public class RpcServiceImpl implements RpcService
 		String matchingTxid = txList.get(startIndex);
 		
 		params[0] = matchingTxid;
-		rpcResult = HdacUtil.getDataFromRPC("getrawtransaction", params, HdacUtil._PUBLIC_);
+		rpcResult = HdacUtil.getDataFromRPC("getrawtransaction", params, config.getMainChainInfo());
 		String txDataTemp = new JSONObject(rpcResult).getJSONObject("result").get("data").toString();
 		String txData = txDataTemp.substring(2, txDataTemp.length()-2);
 		
@@ -402,7 +372,7 @@ public class RpcServiceImpl implements RpcService
 		String byteMerkleTree = "";
 		try {
 			byte[] merkleTreeTemp = hash.getBytes("UTF-8");
-			byte[] reverse = HdacUtil.reverse(merkleTreeTemp);
+			byte[] reverse = reverse(merkleTreeTemp);
 			StringBuilder sb = new StringBuilder();
 	 		for (byte bb : reverse)
 			{
@@ -443,7 +413,7 @@ public class RpcServiceImpl implements RpcService
 		{
 			MultipartFile contractFile = (MultipartFile) paramMap.get("file");
 			fileName = contractFile.getOriginalFilename();
-			uploadFileHash = getContractHash(contractFile);
+			uploadFileHash = tService.getContractHash(contractFile);
 		}
 										
 		//make return data
@@ -470,6 +440,72 @@ public class RpcServiceImpl implements RpcService
 		logger.debug("VERIFY : UPLOAD FILE HASH  : " + uploadFileHash);
 		
 		return resultObj.toString();
+	}
+
+	private List<String> makeHash(List<String> list)
+	{
+		List<String> tempArray = new ArrayList<String>();
+		int arraySize = list.size();
+		for (int i = 0; i < arraySize; i += 2) 
+		{
+			byte[] hex1 = reverseHexStringToByteArray(list.get(i).toString());
+			byte[] hex2 = reverseHexStringToByteArray(list.get(i + 1).toString());
+			tempArray.add(binaryHash(hex1, hex2));
+		}
+
+		if (tempArray.size() > 1)
+			makeHash(tempArray);
+
+		return tempArray;
+	}
+
+	private byte[] reverseHexStringToByteArray(String str)
+	{
+		int len = str.length() / 2;
+		byte[] data = new byte[len];
+		for (int i = 0; i < len; i++)
+		{
+			data[i] = (byte)((Character.digit(str.charAt((len - i - 1) * 2), 16) << 4) + Character.digit(str.charAt((len - i) * 2 - 1), 16));
+		}
+		return data;
+	}
+	
+	private String binaryHash(byte[] hex1, byte[] hex2)
+	{
+		byte[] sum_byte = ArrayUtils.addAll(hex1, hex2);
+		// execute double hash
+		byte[] hash_byte = SHA256(SHA256(sum_byte));
+		// change binary to String
+		StringBuilder sb = new StringBuilder();
+		for (byte bb : hash_byte)
+		{
+			sb.insert(0, String.format("%02X", bb & 0xFF)); 
+		}
+		return sb.toString();
+	}
+
+	private byte[] SHA256(byte[] str)
+	{
+		try
+		{
+			MessageDigest sh = MessageDigest.getInstance("SHA-256"); 
+			sh.update(str); 
+			return sh.digest();
+		}
+		catch (Exception e)
+		{
+		}
+		return null;
+	}
+
+	public byte[] reverse(byte[] arr)
+	{
+		byte[] buf = new byte[arr.length];
+		for (int i = 0; i < arr.length; i++)
+		{
+			buf[i] = (byte)((arr[arr.length - i - 1] >>> (arr.length * i)) & 0xFF);
+		}
+		return buf;		
 	}
 
 	public Map<String, Object> assetIssue(Map<String, Object> paramMap) throws JSONException
@@ -514,10 +550,11 @@ public class RpcServiceImpl implements RpcService
 		if ("".equals(asset) == false)
 			params[0] = asset;
 
-		return HdacUtil.getDataFromRPC("listassets", params, HdacUtil._PRIVATE_);
+		ServerConfig config = ServerConfig.getInstance();
+		return HdacUtil.getDataFromRPC("listassets", params, config.getSideChainInfo());
 	}
 	
-	public String getInfo(ServerConfig config)
+	public String getInfo(Map<String, Object> config)
 	{
 		String result = HdacUtil.getDataFromRPC("getinfo", new Object[0] , config);
 		return result;

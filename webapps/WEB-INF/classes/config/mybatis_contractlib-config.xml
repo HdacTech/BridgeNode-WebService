@@ -10,9 +10,9 @@
 			<transactionManager type="JDBC"/>
 			<dataSource type="UNPOOLED">
 				<property name="driver" value="org.mariadb.jdbc.Driver"/>
-				<property name="url" value="jdbc:mariadb://192.168.70.62:3306/test"/>
-				<property name="username" value="maria"/>
-				<property name="password" value="user!@#$"/>
+				<property name="url" value="jdbc:mariadb://192.168.70.185:3306/test"/>
+				<property name="username" value="root"/>
+				<property name="password" value="hdac1234"/>
  
 				<!-- <property name="url" value="jdbc:mariadb://192.168.18.129:3306/test"/>
 				<property name="username" value="hdac"/>

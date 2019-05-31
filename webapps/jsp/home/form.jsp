@@ -42,13 +42,13 @@
 						<input type="text" name="serverInfo">
 					</div>
  					
- 					<div style="display:none">
+ 					<!-- <div style="display:none"> -->
 					<p class="br_height"></p>
 					<div class="ui label three_hundred">contract binary</div>
 					<div class="ui input three_hundred">
 						<input type="file" name="binary">
 					</div>
-					</div>
+					<!-- </div> -->
 
 					<input type="hidden" name="recordAddress" value="1">
 					<input type="hidden" name="anchoringAddress" value="1">

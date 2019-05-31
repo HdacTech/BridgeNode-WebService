@@ -20,10 +20,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.hdac.common.Constants;
-import com.hdac.common.HdacUtil;
-import com.hdac.common.ServerConfig;
-import com.hdac.common.StringUtil;
+import com.hdac.comm.HdacUtil;
+import com.hdac.comm.StringUtil;
 import com.hdac.comparator.JsonComparator;
+import com.hdac.property.ServerConfig;
+import com.hdac.service.RpcService;
 
 /**
  * RPC(Remote Procedure Call) Data Access Object Implementation
@@ -40,9 +41,9 @@ public class RpcDaoImpl implements RpcDao
 	private static Logger logger = LoggerFactory.getLogger(RpcDaoImpl.class);
 
 	@Override
-	public double getMultiBalance(Map<String, Object> paramMap)
+	public BigDecimal getMultiBalance(Map<String, Object> paramMap)
 	{
-		double balance = 0;
+		BigDecimal balance = BigDecimal.ZERO;
 
 		try
 		{
@@ -50,9 +51,11 @@ public class RpcDaoImpl implements RpcDao
 			int length = array.length();
 			for (int i = 0; i < length; i++)
 			{
-				if (array.getJSONObject(i).has("name") 
-						&& array.getJSONObject(i).getString("name").equals(paramMap.get("asset").toString()))
-					balance += array.getJSONObject(i).getDouble("qty");
+				JSONObject obj = array.getJSONObject(i);
+				if (obj.has("name") && obj.getString("name").equals(paramMap.get("asset")))
+				{
+					balance = balance.add(obj.getBigDecimal("qty"));
+				}
 			}
 		} 
 		catch (JSONException e)
@@ -67,7 +70,6 @@ public class RpcDaoImpl implements RpcDao
 	{
 		try
 		{
-//			String[] addresses = StringUtil.nvl(paramMap.get("address")).split(",");
 			String[] addresses = getFilterListAddresses(StringUtil.nvl(paramMap.get("address")).split(","));
 			
 			if (addresses == null)
@@ -78,11 +80,10 @@ public class RpcDaoImpl implements RpcDao
 			params[1] = StringUtil.nvl(paramMap.get("asset"));
 			params[2] = 0;
 
-			ServerConfig config = HdacUtil._PRIVATE_;
-
-			JSONObject objBalance = HdacUtil.getDataObject("getmultibalances", params, config);
+			ServerConfig config = ServerConfig.getInstance();
+			JSONObject objBalance = HdacUtil.getDataJSONObject("getmultibalances", params, config.getSideChainInfo());
 			
-			String filter = (addresses.length>1 ? Constants.strTOTAL : addresses[0]);
+			String filter = (addresses.length > 1 ? Constants.strTOTAL : addresses[0]);
 			
 			if (objBalance.has(filter))
 				return objBalance.getJSONArray(filter);
@@ -99,15 +100,16 @@ public class RpcDaoImpl implements RpcDao
 		String[] addresses = null;
 		try
 		{
-			String result = HdacUtil.getDataFromRPC("listaddresses", new Object[0], HdacUtil._PRIVATE_);
+			ServerConfig config = ServerConfig.getInstance();
+			String result = HdacUtil.getDataFromRPC("listaddresses", new Object[0], config.getSideChainInfo());
 			logger.debug("result : " + result);
 			logger.debug("result len : " + result.length());
 
-			if (result != null && result.length() > 35) 
+			if ((result != null) && (result.length() > 35)) 
 			{
 				List<String> addrList = new ArrayList<String>();
 
-				for(String address : addrs)
+				for (String address : addrs)
 				{
 					if (result.contains(address))
 						addrList.add(address);
@@ -115,17 +117,8 @@ public class RpcDaoImpl implements RpcDao
 
 				int size = addrList.size();
 				logger.debug("size : " + size);
-				
 				if (size > 0)
-				{
-					addresses = new String[size];
-					for (int i=0; i < size; i++)
-					{
-						logger.debug("i : "+ i);
-						addresses[i] = addrList.get(i);
-					}
-					
-				}
+					addresses = addrList.toArray(new String[size]);
 			}
 		}
 		catch (Exception e)
@@ -154,7 +147,8 @@ public class RpcDaoImpl implements RpcDao
 			options.put("skip",		skip);
 			options.put("verbose",	false);
 
-			JSONArray blockTxList = HdacUtil.getDataArray("listaddresstransactions", params, options, HdacUtil._PRIVATE_);
+			ServerConfig config = ServerConfig.getInstance();
+			JSONArray blockTxList = HdacUtil.getDataJSONArray("listaddresstransactions", params, options, config.getSideChainInfo());
 
 			// add tx list to total tx list
 			for (int i = blockTxList.length() - 1; i >= 0; i--)
@@ -173,51 +167,9 @@ public class RpcDaoImpl implements RpcDao
 	@Override
 	public List<JSONObject> getAssetUtxos(Map<String, Object> paramMap)
 	{
-		List<JSONObject> listMap = new ArrayList<JSONObject>();
-
-		try
-		{
-			Object[] params = new Object[3];
-			params[0] = 0;
-			params[1] = 999999999;
-			params[2] = StringUtil.nvl(paramMap.get("addresses")).split(",");
-
-			JSONArray objUtxoBlockArray = HdacUtil.getDataArray("listunspent", params, HdacUtil._PRIVATE_);
-			logger.debug("objUtxoBlockArray " + objUtxoBlockArray);
-
-			String asset = StringUtil.nvl(paramMap.get("asset"));
-			int length = objUtxoBlockArray.length();
-			for (int i = 0; i < length; i++)
-			{
-				JSONArray assetArray = objUtxoBlockArray.getJSONObject(i).getJSONArray("assets");
-
-				if (assetArray.length() <= 0)
-					continue;
-
-				if (asset.equals(assetArray.getJSONObject(0).getString("name")))
-				{
-					JSONObject obj = objUtxoBlockArray.getJSONObject(i);
-
-					JSONObject map = new JSONObject();
-					map.put("unspent_hash",		obj.get("txid"));
-					map.put("address",			obj.get("address"));
-					map.put("scriptPubKey",		obj.get("scriptPubKey"));
-					map.put("amount",			obj.getDouble("amount"));
-					map.put("vout",				obj.get("vout"));
-					map.put("confirmations",	obj.get("confirmations"));
-					map.put("satoshis",			(long)(obj.getDouble("amount") * Math.pow(10, 8)));
-					map.put("txid",				obj.get("txid"));
-					map.put("assets",			obj.getJSONArray("assets"));
-
-					listMap.add(map);
-				}
-			}
-		}
-		catch (JSONException e)
-		{
-			e.printStackTrace();
-		}
-		return listMap;
+		ServerConfig config = ServerConfig.getInstance();
+		RpcService service = RpcService.getInstance();
+		return service.getAssetUtxos(paramMap, config.getSideChainInfo());
 	}
 
 	@Override
@@ -229,8 +181,8 @@ public class RpcDaoImpl implements RpcDao
 		{
 			List<String> txids = new ArrayList<String>();
 
-			ServerConfig config = HdacUtil._PRIVATE_;
-			long blockCount = getBlockCount(config);
+			ServerConfig config = ServerConfig.getInstance();
+			long blockCount = getBlockCount(config.getSideChainInfo());
 
 			String[] addrs	= StringUtil.nvl(paramMap.get("addresses")).split(",");
 			int count		= Integer.parseInt(StringUtil.nvl(paramMap.get("count"), "50"));
@@ -251,7 +203,7 @@ public class RpcDaoImpl implements RpcDao
 						continue;
 
 					txids.add(txid);
-					list.add(getTxInfo(txid, blockCount, config));
+					list.add(getTxInfo(txid, blockCount, config.getSideChainInfo()));
 				}
 			}
 
@@ -269,91 +221,14 @@ public class RpcDaoImpl implements RpcDao
 	}
 
 	@Override
-	public List<JSONObject> getUtxosNew(Map<String, Object> paramMap, ServerConfig config)
+	public List<JSONObject> getUtxosNew(Map<String, Object> paramMap, Map<String, Object> config)
 	{
-		List<JSONObject> list = new ArrayList<JSONObject>();
-
-		try
-		{
-			long blockCount = getBlockCount(config);
-
-			String[] addresses = StringUtil.nvl(paramMap.get("addresses")).split(",");
-
-			JSONObject params = new JSONObject();
-			params.put("addresses", new JSONArray(Arrays.asList(addresses)));
-
-			JSONArray objMempoolArray = HdacUtil.getDataArray("getaddressmempool", params, config);
-
-			List<JSONObject> vinList = new ArrayList<JSONObject>();
-			separateMempoolList(vinList, list, objMempoolArray);
-
-			JSONArray objUtxoBlockArray = HdacUtil.getDataArray("getaddressutxos", params, config);
-			int blockLength = objUtxoBlockArray.length();
-			for (int i = 0; i < blockLength; i++)
-			{
-				JSONObject obj = objUtxoBlockArray.getJSONObject(i);
-
-				if (TxContains(list, obj) == false)
-					list.add(obj);
-			}
-
-			for (int i = list.size() - 1; i >= 0; i--)
-			{
-				JSONObject obj = list.get(i);
-
-				if (TxContainsPrev(vinList, obj))
-				{
-					list.remove(i);
-					continue;
-				}
-
-				if (obj.has("script"))	// rpc
-				{
-					String txid = obj.getString("txid");
-					long satoshis = obj.getLong("satoshis");
-
-					JSONObject newObj = new JSONObject();
-					newObj.put("unspent_hash",		txid);
-					newObj.put("address",			obj.get("address"));
-					newObj.put("scriptPubKey",		obj.get("script"));
-					newObj.put("amount",			satoshis * Math.pow(10, -8));
-					newObj.put("vout",				obj.get("outputIndex"));
-					newObj.put("confirmations",		blockCount - obj.getLong("height") + 1);
-					newObj.put("satoshis",			satoshis);
-					newObj.put("txid",				txid);
-
-					list.set(i, newObj);
-				}
-				else	// mempool
-				{
-					String txid = obj.getString("txid");
-					int index = obj.getInt("index");
-					long satoshis = obj.getLong("satoshis");
-					String scriptPubKey = getScriptPubKey(txid, index, config);
-
-					JSONObject newObj = new JSONObject();
-					newObj.put("unspent_hash",		txid);
-					newObj.put("address",			obj.get("address"));
-					newObj.put("scriptPubKey",		scriptPubKey);
-					newObj.put("amount",			satoshis * Math.pow(10, -8));
-					newObj.put("vout",				index);
-					newObj.put("confirmations",		0);
-					newObj.put("satoshis",			satoshis);
-					newObj.put("txid",				txid);
-
-					list.set(i, newObj);
-				}
-			}
-		}
-		catch (JSONException e)
-		{
-			e.printStackTrace();
-		}
-		return list;
+		RpcService service = RpcService.getInstance();
+		return service.getUtxos(paramMap, config);
 	}
 
 	@Override
-	public JSONObject getTxsNew(Map<String, Object> paramMap, ServerConfig config)
+	public JSONObject getTxsNew(Map<String, Object> paramMap, Map<String, Object> config)
 	{
 		JSONObject obj = new JSONObject();
 
@@ -372,7 +247,7 @@ public class RpcDaoImpl implements RpcDao
 			JSONObject params = new JSONObject();
 			params.put("addresses", new JSONArray(Arrays.asList(addrs)));
 
-			JSONArray mempoolArray = HdacUtil.getDataArray("getaddressmempool", params, config);
+			JSONArray mempoolArray = HdacUtil.getDataJSONArray("getaddressmempool", params, config);
 			int mempoolLength = mempoolArray.length();
 
 //			params.put("from", Math.max(from - mempoolLength, 0));
@@ -383,7 +258,7 @@ public class RpcDaoImpl implements RpcDao
 			if (end > -1)
 				params.put("end", end);
 
-			JSONArray blockArray = HdacUtil.getDataArray("getaddresstxids", params, config);
+			JSONArray blockArray = HdacUtil.getDataJSONArray("getaddresstxids", params, config);
 			int blockLength = blockArray.length();
 			logger.debug("array : " + blockArray);
 
@@ -437,43 +312,19 @@ public class RpcDaoImpl implements RpcDao
 	}
 
 	@Override
-	public JSONObject getBlock(String blockHash, ServerConfig config)
+	public JSONObject getBlock(String blockHash, Map<String, Object> config)
 	{
-		JSONObject obj = new JSONObject();
-		
-		try
-		{	//get block height from block hash
-			Object[] params = new Object[2];
-			params[0] = blockHash;
-			params[1] = 4;
-
-			obj = HdacUtil.getDataObject("getblock", params, config);
-		}
-		catch (JSONException e)
-		{
-			e.printStackTrace();
-		}
-		return obj;
+		RpcService service = RpcService.getInstance();
+		return service.getblock(Long.parseLong(blockHash), config);
 	}
 	
-	private long getBlockCount(ServerConfig config)
+	private long getBlockCount(Map<String, Object> config)
 	{
-		try
-		{
-			String strBlockCount = HdacUtil.getDataFromRPC("getblockcount", new String[0], config);
-			JSONObject objBlockCount = new JSONObject(strBlockCount);
-			long blockHeight = objBlockCount.getLong("result");
-
-			return blockHeight;
-		}
-		catch (JSONException e)
-		{
-			e.printStackTrace();
-		}
-		return -1;
+		RpcService service = RpcService.getInstance();
+		return service.getBlockCount(config);
 	}
 
-	private void setValueInValue(JSONObject txInfo, JSONArray vinArray, double valueOut, ServerConfig config) throws JSONException
+	private void setValueInValue(JSONObject txInfo, JSONArray vinArray, BigDecimal valueOut, Map<String, Object> config) throws JSONException
 	{	// make some new field valuein, fees, value and so on
 		int vinLength = vinArray.length();
 		if (vinLength <= 0)
@@ -486,7 +337,7 @@ public class RpcDaoImpl implements RpcDao
 			return;
 		}
 
-		double valueIn = 0.;
+		BigDecimal valueIn = BigDecimal.ZERO;
 		for (int i = 0; i < vinLength; i++)
 		{
 			JSONObject obj = vinArray.getJSONObject(i);
@@ -494,28 +345,29 @@ public class RpcDaoImpl implements RpcDao
 			int vout = obj.getInt("vout");
 
 			Map<String, Object> result = getVinValueAddr(obj.getString("txid"), vout, config);
-			double value = (double)result.get("value");
+			BigDecimal value = new BigDecimal(StringUtil.nvl(result.get("value"), "0"));
 
-			valueIn += value;
+			valueIn = valueIn.add(value);
 
 			obj.put("value",	value);
-			obj.put("valueSat",	value * Math.pow(10, 8));
+			obj.put("valueSat",	value.multiply(BigDecimal.TEN.pow(8)));
 			obj.put("addr",		result.get("addr"));
 			obj.put("assets",	result.get("assets"));
 			obj.remove("scriptSig");
 		}
 
-		double fees = ((long)(valueIn * Math.pow(10, 8)) - (long)(valueOut * Math.pow(10, 8))) * Math.pow(10, -8);
+		BigDecimal fees = valueIn.subtract(valueOut);
 
 		txInfo.put("valueIn", valueIn);	
 		txInfo.put("fees", fees);
 	}
 
-	private Map<String, Object> getVinValueAddr(String txid, int vout, ServerConfig config) throws JSONException
+	private Map<String, Object> getVinValueAddr(String txid, int vout, Map<String, Object> config) throws JSONException
 	{
 		Map<String, Object> result = new HashMap<String, Object>();
 
-		JSONObject txInfo = getRawTransaction(txid, config);
+		RpcService service = RpcService.getInstance();
+		JSONObject txInfo = service.getRawTransaction(txid, config);
 		JSONArray voutArray = txInfo.getJSONArray("vout");
 		int n = 0;
 		for (int i = 0; i < voutArray.length(); i++)
@@ -525,7 +377,7 @@ public class RpcDaoImpl implements RpcDao
 			n = obj.getInt("n");
 			if (vout == n)
 			{
-				double sum = obj.getDouble("value");
+				BigDecimal sum = obj.getBigDecimal("value");
 				JSONArray addr = obj.getJSONObject("scriptPubKey").getJSONArray("addresses");
 
 				JSONArray ret = new JSONArray();
@@ -558,16 +410,16 @@ public class RpcDaoImpl implements RpcDao
 		return result;
 	}
 
-	private double getValueOutValue(JSONArray voutArray) throws JSONException
+	private BigDecimal getValueOutValue(JSONArray voutArray) throws JSONException
 	{
-		double valueOut = 0.;
+		BigDecimal valueOut = BigDecimal.ZERO;
 
 		int voutLength = voutArray.length();
 		for (int i = 0; i < voutLength; i++)
 		{
 			JSONObject obj = voutArray.getJSONObject(i);
 
-			valueOut += obj.getDouble("value");
+			valueOut = valueOut.add(obj.getBigDecimal("value"));
 			//obj.remove("assets");
 			obj.remove("permissions");
 			obj.remove("items");
@@ -576,116 +428,10 @@ public class RpcDaoImpl implements RpcDao
 		return valueOut;
 	}
 
-	private String getScriptPubKey(String txid, int index, ServerConfig config) throws JSONException
+	private JSONObject getTxInfo(String txid, long blockCount, Map<String, Object> config) throws JSONException
 	{
-		Object[] params = new Object[2];
-		params[0] = txid;
-		params[1] = index;
-
-		JSONObject options = new JSONObject();
-		options.put("unconfirmed", true);
-
-		JSONObject voutObj = HdacUtil.getDataObject("gettxout", params, options, config);
-		if (voutObj.has("scriptPubKey"))
-		{
-			JSONObject scriptObj = voutObj.getJSONObject("scriptPubKey");
-			if (scriptObj.has("hex"))
-				return scriptObj.getString("hex");
-		}
-		return "";
-	}
-
-	private void separateMempoolList(List<JSONObject> vinList, List<JSONObject> voutList, JSONArray objMempoolArray) throws JSONException
-	{
-		int length = objMempoolArray.length();
-		for (int i = 0; i < length; i++)
-		{
-			JSONObject obj = objMempoolArray.getJSONObject(i);
-			long satoshis = obj.getLong("satoshis");
-			if (satoshis > 0)
-			{
-				voutList.add(obj);
-			}
-			else if (satoshis < 0)
-			{
-				vinList.add(obj);
-			}
-		}
-	}
-
-	private boolean TxContains(List<JSONObject> list, JSONObject obj) throws JSONException
-	{
-		String txid = obj.getString("txid");
-
-		int size = list.size();
-		for (int i = 0; i < size; i++)
-		{
-			JSONObject source = list.get(i);
-
-			if (txid.equals(source.getString("txid")))
-			{
-				int sIndex = getIndex(source);
-				int tIndex = getIndex(obj);
-
-				if (sIndex == tIndex)
-					return true;
-			}
-		}
-		return false;
-	}
-	private boolean TxContainsPrev(List<JSONObject> list, JSONObject obj) throws JSONException
-	{
-		String txid = obj.getString("txid");
-
-		int size = list.size();
-		for (int i = 0; i < size; i++)
-		{
-			JSONObject source = list.get(i);
-
-			if (txid.equals(source.getString("prevtxid")))
-			{
-				int sIndex = getIndexPrev(source);
-				int tIndex = getIndex(obj);
-
-				if (sIndex == tIndex)
-					return true;
-			}
-		}
-		return false;
-	}
-
-	private int getIndex(JSONObject obj) throws JSONException
-	{
-		int index = -1;
-		
-		if (obj.has("vout"))
-		{
-			index = obj.getInt("vout");
-		}
-		else if (obj.has("index"))
-		{
-			index = obj.getInt("index");
-		}
-		else if (obj.has("outputIndex"))
-		{
-			index = obj.getInt("outputIndex");
-		}
-		return index;
-	}
-	private int getIndexPrev(JSONObject obj) throws JSONException
-	{
-		int index = -1;
-		
-		if (obj.has("prevout"))
-		{
-			index = obj.getInt("prevout");
-		}
-		return index;
-	}
-
-	private JSONObject getTxInfo(String txid, long blockCount, ServerConfig config) throws JSONException
-	{
-		JSONObject txInfo = getRawTransaction(txid, config);
+		RpcService service = RpcService.getInstance();
+		JSONObject txInfo = service.getRawTransaction(txid, config);
 
 		// make time field of mempool tx object to current time  
 		if (txInfo.has("time") == false)
@@ -708,7 +454,7 @@ public class RpcDaoImpl implements RpcDao
 		JSONArray vinArray = txInfo.getJSONArray("vin");
 		JSONArray voutArray = txInfo.getJSONArray("vout");
 
-		double valueOut = getValueOutValue(voutArray);
+		BigDecimal valueOut = getValueOutValue(voutArray);
 		txInfo.put("valueOut", valueOut);
 
 		// valuein
@@ -722,19 +468,22 @@ public class RpcDaoImpl implements RpcDao
 	}
 
 	@Override
-	public double getAddressBalance(String address, ServerConfig config)
+	public BigDecimal getAddressBalance(String address, Map<String, Object> config)
 	{
-		double balance = 0;
+		BigDecimal balance = BigDecimal.ZERO;
 
 		try
 		{
-			JSONObject params = new JSONObject();
-			params.put("addresses", address.split(","));
+			Object[] params = new Object[1];
+			
+			JSONObject paramObj = new JSONObject();
+			paramObj.put("addresses", address.split(","));
+			params[0] = paramObj;
 
-			JSONObject objBalance = HdacUtil.getDataObject("getaddressbalance", params, config);
+			JSONObject objBalance = HdacUtil.getDataJSONObject("getaddressbalance", params, config);
 			BigDecimal satoshis = objBalance.getBigDecimal("balance");
 
-			JSONArray mempoolList = HdacUtil.getDataArray("getaddressmempool", params, config);
+			JSONArray mempoolList = HdacUtil.getDataJSONArray("getaddressmempool", params, config);
 			int mempoolLength = mempoolList.length();
 			for (int i = 0; i < mempoolLength; i++)
 			{
@@ -742,7 +491,7 @@ public class RpcDaoImpl implements RpcDao
 				satoshis = satoshis.add(obj.getBigDecimal("satoshis"));
 			}
 			
-			balance = satoshis.divide(BigDecimal.TEN.pow(8)).doubleValue();
+			balance = satoshis.divide(BigDecimal.TEN.pow(8));
 		}
 		catch (JSONException e)
 		{
@@ -752,7 +501,7 @@ public class RpcDaoImpl implements RpcDao
 	}
 
 	@Override
-	public List<String> getAddressList(Map<String, Object> paramMap, ServerConfig config)
+	public List<String> getAddressList(Map<String, Object> paramMap, Map<String, Object> config)
 	{
 		List<String> list = new ArrayList<String>();
 
@@ -767,7 +516,7 @@ public class RpcDaoImpl implements RpcDao
 			JSONObject params = new JSONObject();
 			params.put("addresses", address.split(","));
 
-			JSONArray mempoolArray = HdacUtil.getDataArray("getaddressmempool", params, config);
+			JSONArray mempoolArray = HdacUtil.getDataJSONArray("getaddressmempool", params, config);
 			int mempoolLength = mempoolArray.length();
 
 			params.put("from", Math.max(from - mempoolLength, 0));
@@ -778,7 +527,7 @@ public class RpcDaoImpl implements RpcDao
 			if (end > -1)
 				params.put("end", end);
 
-			JSONArray blockArray = HdacUtil.getDataArray("getaddresstxids", params, config);
+			JSONArray blockArray = HdacUtil.getDataJSONArray("getaddresstxids", params, config);
 			int blockLength = blockArray.length();
 			for (int i = 0; i < blockLength; i++)
 			{
@@ -805,28 +554,6 @@ public class RpcDaoImpl implements RpcDao
 		return list;
 	}
 
-	private JSONObject getRawTransaction(String txid, ServerConfig config)
-	{
-		JSONObject tx = null;
-		
-		try
-		{
-			Object[] params = new Object[2];
-			params[0] = txid;
-			params[1] = 1;
-
-			String result = HdacUtil.getDataFromRPC("getrawtransaction", params, config);
-	
-			JSONObject rpcObject = new JSONObject(result);
-			tx = rpcObject.getJSONObject("result");
-		}
-		catch (JSONException e)
-		{
-			e.printStackTrace();
-		}
-		return tx;
-	}
-
 	@Override
 	public String assetIssue(Map<String, Object> paramMap)
 	{
@@ -847,7 +574,8 @@ public class RpcDaoImpl implements RpcDao
 				if(typeName.has("name"))  params[1] = typeName;
 			}
 
-			result = HdacUtil.getDataFromRPC("issue", params, HdacUtil._PRIVATE_);
+			ServerConfig config = ServerConfig.getInstance();
+			result = HdacUtil.getDataFromRPC("issue", params, config.getSideChainInfo());
 		}
 		catch (JSONException e)
 		{

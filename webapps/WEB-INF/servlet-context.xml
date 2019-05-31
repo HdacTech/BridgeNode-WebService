@@ -31,7 +31,8 @@
 			<beans:bean class="com.hdac.interceptor.SeedCheckInterceptor"></beans:bean>
 		</interceptor>
 		<interceptor>
-			<mapping path="/*" />
+			<mapping path="/form.*" />
+			<mapping path="/submitReport.*" />
 			<beans:bean class="com.hdac.interceptor.AccessInterceptor"></beans:bean>
 		</interceptor>
 	</interceptors>

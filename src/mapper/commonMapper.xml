@@ -31,4 +31,13 @@
 			#{seq_val}
 		)
 	</insert>
+
+	<select id="selectAccessIp" resultType="string">
+		SELECT	/* [commonMapper.xml] common.selectAccessIp, 190514 dire */
+			ip
+		FROM
+			access_ip
+		WHERE
+			use_yn = 'Y'
+	</select>
 </mapper>

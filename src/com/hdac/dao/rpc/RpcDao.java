@@ -5,13 +5,13 @@
  */
 package com.hdac.dao.rpc;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import com.hdac.common.ServerConfig;
 
 /**
  * RPC(Remote Procedure Call) Data Access Object Interface
@@ -30,9 +30,9 @@ public interface RpcDao
 	 * called by getAssetAddressBalance(RpcService)
 	 * 
 	 * @param paramMap	values(addresses,asset)
-	 * @return          get total balance(double) 
+	 * @return          get total balance(BigInteger) 
 	 */
-	public double getMultiBalance(Map<String, Object> paramMap);
+	public BigDecimal getMultiBalance(Map<String, Object> paramMap);
 
 	/**
 	 * get multi addresses token total valus(side chain only)
@@ -80,7 +80,7 @@ public interface RpcDao
 	 * @param config	value(main chain or side chain)
 	 * @return          (list(jsonobject)) the formatted list(jsonobject)
 	 */
-	public List<JSONObject> getUtxosNew(Map<String, Object> paramMap, ServerConfig config);
+	public List<JSONObject> getUtxosNew(Map<String, Object> paramMap, Map<String, Object> config);
 	
 	/**
 	 * get multi addresses transactions informations
@@ -90,7 +90,7 @@ public interface RpcDao
 	 * @param config	value(main chain or side chain)
 	 * @return          (jsonobject) the formatted jsonobject
 	 */
-	public JSONObject getTxsNew(Map<String, Object> paramMap, ServerConfig config);
+	public JSONObject getTxsNew(Map<String, Object> paramMap, Map<String, Object> config);
 	
 	/**
 	 * get signle address balance value
@@ -98,9 +98,9 @@ public interface RpcDao
 	 * 
 	 * @param address	(string) the base58check encoded address
 	 * @param config	value(main chain or side chain)
-	 * @return          (double)address balance 
+	 * @return          (BigDecimal)address balance 
 	 */	
-	public double getAddressBalance(String address, ServerConfig config);
+	public BigDecimal getAddressBalance(String address, Map<String, Object> config);
 	
 	/**
 	 * get signle address infomation(balance, transactions, etc...)
@@ -110,7 +110,7 @@ public interface RpcDao
 	 * @param config	value(main chain or side chain)
 	 * @return          (List(string)) the formatted list string
 	 */
-	public List<String> getAddressList(Map<String, Object> paramMap, ServerConfig config);
+	public List<String> getAddressList(Map<String, Object> paramMap, Map<String, Object> config);
 	
 	//public JSONObject getRawTransaction(String txid, ServerConfig config);
 
@@ -130,5 +130,5 @@ public interface RpcDao
 	 * @param config	value(main chain or side chain)
 	 * @return          (jsonobject) the formatted jsonobject
 	 */
-	public JSONObject getBlock(String blockHash, ServerConfig config);
+	public JSONObject getBlock(String blockHash, Map<String, Object> config);
 }

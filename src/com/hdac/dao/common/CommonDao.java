@@ -5,6 +5,7 @@
  */
 package com.hdac.dao.common;
 
+import java.util.List;
 import org.apache.ibatis.session.SqlSession;
 import org.springframework.stereotype.Repository;
 
@@ -34,4 +35,10 @@ public interface CommonDao
 	 * @return (long) get next database no(UID)
 	 */
 	public long getSeqTokenInfo();
+
+	/**
+	 * get allowed access ip list
+	 * @return (List) get access ip list
+	 */
+	public List<String> getAccessIp();
 }

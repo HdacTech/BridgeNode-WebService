@@ -20,7 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 
 import com.hdac.common.BeanUtil;
-import com.hdac.common.JsonUtil;
+import com.hdac.comm.JsonUtil;
 import com.hdac.service.token.TokenService;
 import com.hdac.service.token.TokenServiceImpl;
 
@@ -176,8 +176,8 @@ public class SwapController
 		paramMap.put("tokenSwapRatio",		tokenSwapRatio);
 		paramMap.put("serverInfo",			serverInfo);
 		paramMap.put("binary",				binary);
-		paramMap.put("binaryHash",			binaryHash);
-		paramMap.put("binaryPath",			binaryPath);
+//		paramMap.put("binaryHash",			binaryHash);
+//		paramMap.put("binaryPath",			binaryPath);
 		paramMap.put("pointNumber",			8);
 
 		TokenService tokenservice = (TokenService)BeanUtil.getBean(TokenServiceImpl.class); //hyyang
