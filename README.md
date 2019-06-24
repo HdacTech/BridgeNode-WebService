@@ -48,11 +48,11 @@ If source code update occurs, the class file must be overridden in the existing 
 >- classes : /opt/tomcat1/myapp/WEB-INF
 >- js,css : /opt/tomcat1/myapp/explorer
 >- jsp : /opt/tomcat1/myapp/jsp
->- $ docker cp classes webserver:/opt/tomcat1/myapp/WEB-INF  
+>- ex)$ docker cp classes webserver:/opt/tomcat1/myapp/WEB-INF  
 >3. After update, restart tomcat service
 >- $ systemctl restart tomcat-1 (tomcat-2 also)
 >4. If library changeing occurs, All library files are managed by nfsserver, copy the jar file to the nfsserver docker container.  
->- $ docker cp Anchoring-0.0.1.jar nfsserver:/opt/shareUtil/lib (After running nfsserver container)
+>- $ docker cp [JAR FILE] nfsserver:/opt/shareUtil/lib (After running nfsserver container)
 
 ### How to operate service
 
