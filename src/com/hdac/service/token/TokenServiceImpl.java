@@ -185,7 +185,7 @@ public class TokenServiceImpl implements TokenService
 				paramMap.put("anchoringAddress",	anchoringAddress);
 			}
 			
-			
+			copyContractLib(paramMap);
 			
 			result = main.registTokenInfo(wallet, paramMap, contractAddress);		// make tx to main chain
 			logger.debug(" registTokenInfo result : " + result);
@@ -203,7 +203,7 @@ public class TokenServiceImpl implements TokenService
 			if (bSuccess)
 				resultMap.put("success", bSuccess);
 			
-		    copyContractLib(paramMap);
+		    
 		}
 		finally
 		{
