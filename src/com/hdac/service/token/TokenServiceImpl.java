@@ -173,7 +173,7 @@ public class TokenServiceImpl implements TokenService
 			String result = main.issueToken(paramMap, contractAddress);
 		    logger.debug(" issueToken result : " + result);
 		    
-		    copyContractLib(paramMap);
+
 		    
 			if (result == null)
 				return resultMap;
@@ -181,7 +181,7 @@ public class TokenServiceImpl implements TokenService
 			{
 				paramMap.put("contractAddress",		contractAddress);
 				paramMap.put("tokenTxid",			result);
-				paramMap.put("bianryAddress",		binaryAddress);
+				paramMap.put("recordAddress",		binaryAddress);
 				paramMap.put("anchoringAddress",	anchoringAddress);
 			}
 			
@@ -202,6 +202,8 @@ public class TokenServiceImpl implements TokenService
 
 			if (bSuccess)
 				resultMap.put("success", bSuccess);
+			
+		    copyContractLib(paramMap);
 		}
 		finally
 		{
