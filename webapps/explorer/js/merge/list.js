@@ -121,7 +121,7 @@ define(["jquery", "handlebars", "common"], function($, HANDLEBARS, COMMON)
 			switch (name)
 			{
 				case 'home' :
-					var url = '/list.do';
+					var url = '/main.do';
 					COMMON._COMMON_.MovePage(url, true);
 					break;
 

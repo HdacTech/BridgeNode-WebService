@@ -92,6 +92,11 @@ define(["jquery", "handlebars", "common"], function($, HANDLEBARS, COMMON)
 					var url = '/main.do';
 					COMMON._COMMON_.MovePage(url, true);
 					break;
+					
+				case 'home' :
+					var url = '/main.do';
+					COMMON._COMMON_.MovePage(url, true);
+					break;
 
 				default :
 					if (typeof callbackFunc == "function")
