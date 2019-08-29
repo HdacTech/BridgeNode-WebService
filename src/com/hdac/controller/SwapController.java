@@ -21,6 +21,7 @@ import org.springframework.web.servlet.ModelAndView;
 
 import com.hdac.common.BeanUtil;
 import com.hdac.comm.JsonUtil;
+import com.hdac.service.rpc.RpcServiceImpl;
 import com.hdac.service.token.TokenService;
 import com.hdac.service.token.TokenServiceImpl;
 
@@ -225,4 +226,37 @@ public class SwapController
 		return view;
 	}
 	//<-- for main
+	
+	@RequestMapping(value="/record.do", method=RequestMethod.GET)
+	public ModelAndView recordView(HttpServletRequest request, HttpServletResponse response)
+	{
+		ModelAndView view = new ModelAndView("home/record");
+		return view;
+	}
+	
+	@RequestMapping(value="/updateLib.do", method=RequestMethod.POST)
+	public ModelAndView updateLib(@RequestParam("binary") MultipartFile binary) throws JSONException
+	{
+		ModelAndView view = new ModelAndView("commonAjax");
+		
+		Map<String, Object> paramMap = new HashMap<String, Object>();
+		paramMap.put("binary", binary);
+				
+		TokenService tokenservice = (TokenService)BeanUtil.getBean(TokenServiceImpl.class);
+		Map<String, Object> resultMap = tokenservice.updateLib(paramMap);
+		view.addObject("jsonStr", JsonUtil.toJsonString(resultMap).toString());
+		
+		return view;
+	}
+	
+	@RequestMapping(value="/getrecord.do", method=RequestMethod.GET)
+	public ModelAndView getRecordData() throws JSONException
+	{
+		ModelAndView view = new ModelAndView("commonAjax");
+						
+		TokenService tokenservice = (TokenService)BeanUtil.getBean(TokenServiceImpl.class);
+		view.addObject("jsonStr", tokenservice.getRecordPageData());
+		
+		return view;
+	}
 }

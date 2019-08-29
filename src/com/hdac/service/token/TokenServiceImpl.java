@@ -8,11 +8,17 @@ package com.hdac.service.token;
 
 import java.io.File;
 import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.ibatis.session.SqlSession;
+import org.bitcoinj.core.ECKey;
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.hdac.common.BeanUtil;
 import com.hdac.comm.HdacUtil;
 import com.hdac.comm.JsonUtil;
+import com.hdac.comm.StringUtil;
 import com.hdac.common.SqlMapConfig;
 import com.hdac.common.SqlMapConfig2;
 import com.hdac.contract.HdacTokenIssue;
@@ -31,6 +38,9 @@ import com.hdac.dao.rpc.RpcDaoImpl;
 import com.hdac.dao.token.TokenDao;
 import com.hdac.dao.token.TokenDaoImpl;
 import com.hdac.property.ServerConfig;
+import com.hdac.service.rpc.RpcService;
+import com.hdac.service.rpc.RpcServiceImpl;
+import com.hdacSdk.hdacWallet.HdacTransaction;
 import com.hdacSdk.hdacWallet.HdacWallet;
 
 /**
@@ -282,7 +292,59 @@ public class TokenServiceImpl implements TokenService
 		result.put("contractBalance", contract_balance);
 		result.put("anchoringBalance", anchoring_balance);
 		result.put("recordBalance", record_balance);
-
+		
+		RpcServiceImpl service = (RpcServiceImpl)BeanUtil.getBean(RpcServiceImpl.class);
+		
+		try
+		{
+			String mainInfo = service.getInfo(config.getMainChainInfo());
+			String check = new JSONObject(mainInfo).get("result").toString();
+			if(check.equals("null"))
+			{
+				JSONObject mainErrObj = new JSONObject(mainInfo).getJSONObject("error");
+				result.put("mainState", mainErrObj.get("message").toString());
+			}
+			else
+			{
+				JSONObject mainObj = new JSONObject(mainInfo).getJSONObject("result");
+				result.put("mainName", mainObj.get("chainname").toString());
+				result.put("mainState", "Running");
+				result.put("mainHeight", mainObj.get("blocks").toString());
+			}
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+			result.put("mainName", "");
+			result.put("mainState", "OFF");
+			result.put("mainHeight", "");
+		}
+		
+		try
+		{
+			String sideInfo = service.getInfo(config.getSideChainInfo());
+			String check = new JSONObject(sideInfo).get("result").toString();
+			if(check.equals("null"))
+			{
+				JSONObject sideErrObj = new JSONObject(sideInfo).getJSONObject("error");
+				result.put("sideState", sideErrObj.get("message").toString());
+			}
+			else
+			{
+				JSONObject sideObj = new JSONObject(sideInfo).getJSONObject("result");
+				result.put("sideName", sideObj.get("chainname").toString());
+				result.put("sideState", "Running");
+				result.put("sideHeight", sideObj.get("blocks").toString());
+			}
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+			result.put("sideName", "");
+			result.put("sideState", "OFF");
+			result.put("sideHeight", "");
+		}
+		
 		return result.toString();
 	}
 	//<-- for main
@@ -362,4 +424,163 @@ public class TokenServiceImpl implements TokenService
 
 		return result;
 	}
+	
+	@Override
+	public Map<String, Object> updateLib(Map<String, Object> paramMap)
+	{
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		Map<String, Object> paramTx = new HashMap<String, Object>();
+		
+		//--> get record address
+		HdacWallet wallet = getTokenHdacWallet();
+		String binaryAddress = wallet.getHdacAddress(false, 1);
+		
+		//--> get utxo of record address
+		paramMap.put("addresses", binaryAddress);
+		ServerConfig config = ServerConfig.getInstance();
+		RpcService service = (RpcService)BeanUtil.getBean(RpcServiceImpl.class);
+		String utxo = service.getUtxos(paramMap, config.getServerType("public"));
+		JSONArray utxoArray = new JSONArray(utxo);
+		
+		//--> get file hash and create transactions with hash in the data area
+		MultipartFile file = (MultipartFile) paramMap.get("binary");
+		String hash = getContractHash(file);
+		paramTx.put("contractHash", hash);
+		String result = makeRawTransactionForRecord(wallet, utxoArray, paramTx, binaryAddress);
+				
+		//--> send transaction	
+		Object[] params = new Object[1];
+		params[0] = result;
+
+		String strSendResult = HdacUtil.getDataFromRPC("sendrawtransaction", params, config.getServerType("public"));
+		JSONObject resultObj = new JSONObject(strSendResult);
+		
+		//--> make return data		
+		if(resultObj.get("error").toString().equals("null")) 
+		{
+			resultMap.put("result", "success");
+			resultMap.put("recordTxid", resultObj.get("result").toString());
+			
+			copyContractLib(paramMap);
+			resultMap.put("libHash", String.valueOf(paramMap.get("binaryHash")));
+		}
+		else 
+		{
+			resultMap.put("result", "Fail");
+			resultMap.put("recordTxid", new JSONObject(resultObj.get("error").toString()).get("message").toString());
+			resultMap.put("libHash","");
+		}
+		
+		return resultMap;
+	}
+	
+	public String getRecordPageData() 
+	{
+		Map<String, Object> paramMap = new HashMap<String, Object>();
+		
+		HdacWallet wallet = getTokenHdacWallet();
+		String binaryAddress = wallet.getHdacAddress(false, 1);
+		
+		paramMap.put("addresses", binaryAddress);
+		paramMap.put("start", -1);
+		paramMap.put("end", -1);
+		paramMap.put("from", 0);
+		paramMap.put("count", 50);
+		
+		ServerConfig config = ServerConfig.getInstance();
+		RpcService service = (RpcService)BeanUtil.getBean(RpcServiceImpl.class);
+		String resultStr = service.getTxs(paramMap, config.getServerType("public"));
+		
+		JSONObject result = new JSONObject(resultStr);
+		JSONArray txArray = result.getJSONArray("items");
+		
+		JSONArray returnArray = new JSONArray();
+		String time = "";
+		String date = "";
+		String dataHex = "";
+		String pattern = "yyyy-MM-dd";
+		SimpleDateFormat formatter = new SimpleDateFormat(pattern);
+		
+		for(int i = 0; i < txArray.length(); i++)
+		{
+			JSONObject obj = new JSONObject();
+			
+			time = txArray.getJSONObject(i).get("time").toString() + "000";
+			long timeL = Long.parseLong(time);
+			date = (String)formatter.format(new Timestamp(timeL));
+			
+			dataHex = txArray.getJSONObject(i).get("data").toString();
+			if(dataHex.length() > 2)
+			{
+				dataHex = dataHex.substring(2, dataHex.length()-2);
+				obj.put("data", StringUtil.hexToString(dataHex));
+			}
+									
+			obj.put("time", date);
+			obj.put("txid", txArray.getJSONObject(i).get("txid").toString());
+			
+			returnArray.put(i, obj);
+		}
+						
+		System.out.println("RESULT2 : " + returnArray.toString());
+				
+		return returnArray.toString();
+	}
+		
+	private String makeRawTransactionForRecord(HdacWallet wallet, JSONArray data, Map<String, Object> paramMap, String address) 
+	{
+		HdacTransaction transaction = new HdacTransaction(wallet.getNetworkParams());
+		String contractString = "";
+		if (paramMap.size() > 0) 
+		{
+			contractString = JsonUtil.toJsonString(paramMap).toString();
+		}
+		BigDecimal balance = BigDecimal.ZERO;
+		try 
+		{
+			int len = data.length();
+			for (int i = 0; i < len; i++) 
+			{
+				JSONObject utxo = data.getJSONObject(i);
+				balance = balance.add(utxo.getBigDecimal("amount"));
+
+				transaction.addInput(utxo);
+			}
+		} 
+		catch (JSONException e) 
+		{
+			e.printStackTrace();
+			return null;
+		}
+		BigInteger lBalance = balance.multiply(BigDecimal.TEN.pow(8)).toBigInteger();
+		BigInteger fee = BigInteger.valueOf(2L).multiply(BigInteger.TEN.pow(6))
+				.add(BigInteger.valueOf(contractString.length()).multiply(BigInteger.TEN.pow(3)));
+		BigInteger remain = lBalance.subtract(fee);
+		if (remain.compareTo(BigInteger.ZERO) < 0) 
+		{
+			return null;
+		}
+		transaction.addOutput(address, remain.longValue());
+		transaction.addOpReturnOutput(JsonUtil.toJsonString(paramMap).toString(), "UTF-8");
+		try 
+		{
+			int len = data.length();
+			for (int i = 0; i < len; i++) 
+			{
+				JSONObject utxo = data.getJSONObject(i);
+				ECKey sign = wallet.getHdacSigKey(utxo.getString("address"));
+				if (sign != null) 
+				{
+					transaction.setSignedInput(i, utxo, sign);
+				}
+			}
+		} 
+		catch (JSONException e) 
+		{
+			e.printStackTrace();
+		}
+		return transaction.getTxBuilder().build().toHex();
+	}
+	
+	
 }

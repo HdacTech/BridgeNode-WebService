@@ -78,4 +78,8 @@ public interface TokenService
 	public String getMainPageData();  //--> for main
 	
 	public String getContractHash(MultipartFile file);  //-->for contract upload
+	
+	public Map<String, Object> updateLib(Map<String, Object> paramMap);
+	
+	public String getRecordPageData();  
 }
